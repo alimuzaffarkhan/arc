@@ -66,6 +66,7 @@ class ARCSuite extends FunSuite with BeforeAndAfter {
             sqlParams=Map.empty,
             params=Map.empty
         ) :: Nil
+        ,Nil
     )
 
     val thrown = intercept[Exception with DetailException] {

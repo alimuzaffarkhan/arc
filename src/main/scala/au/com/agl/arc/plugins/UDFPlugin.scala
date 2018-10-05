@@ -1,6 +1,12 @@
 package au.com.agl.arc.plugins
 
+import java.util.ServiceLoader
+
+import scala.collection.JavaConverters._
+
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.SQLContext
+import au.com.agl.arc.util.Utils
 
 trait UDFPlugin {
 
@@ -9,3 +15,26 @@ trait UDFPlugin {
 
 }
 
+object UDFPlugin {
+
+  def registerPluginsForName(name: String)(implicit spark: SparkSession, logger: au.com.agl.arc.util.log.logger.Logger) {
+
+    val loader = Utils.getContextOrSparkClassLoader
+    val serviceLoader = ServiceLoader.load(classOf[UDFPlugin], loader)
+
+    val plugins = for (p <- serviceLoader.iterator().asScala.toList if p.getClass.getName == name) yield p
+
+    for (p <- serviceLoader.iterator().asScala) {
+      val pluginUDFs = p.register(spark.sqlContext)
+
+      val name = p.getClass.getName
+
+      val logData = new java.util.HashMap[String, Object]()
+      logData.put("name", name)
+      logData.put("udfs", pluginUDFs.asJava)
+
+      logger.info().message(s"Registered UDF Plugin $name").field("udfPlugin", logData).log()
+    }
+  }
+
+}

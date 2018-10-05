@@ -56,21 +56,6 @@ object UDF {
     sqlContext.udf.register("get_json_integer_array", getJSONIntArray _ )
     sqlContext.udf.register("get_json_long_array", getJSONLongArray _ )
     sqlContext.udf.register("random", getRandom _ )
-
-    val loader = Utils.getContextOrSparkClassLoader
-    val serviceLoader = ServiceLoader.load(classOf[UDFPlugin], loader)
-
-    for (p <- serviceLoader.iterator().asScala) {
-      val pluginUDFs = p.register(sqlContext)
-
-      val name = p.getClass.getName
-
-      val logData = new java.util.HashMap[String, Object]()
-      logData.put("name", name)
-      logData.put("udfs", pluginUDFs.asJava)
-
-      logger.info().message(s"Registered UDF Plugin $name").field("udfPlugin", logData).log()
-    }
   }
 
 }

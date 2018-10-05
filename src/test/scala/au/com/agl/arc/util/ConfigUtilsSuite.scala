@@ -124,7 +124,7 @@ class ConfigUtilsSuite extends FunSuite with BeforeAndAfter {
       params = Map.empty
     )
 
-    val expected = ETLPipeline(stage :: subDelimitedExtractStage :: subTypingTransformStage :: subSQLValidateStage :: Nil)
+    val expected = ETLPipeline(stage :: subDelimitedExtractStage :: subTypingTransformStage :: subSQLValidateStage :: Nil, Nil)
 
     assert(pipeline === Right(expected))
   }

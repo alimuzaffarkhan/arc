@@ -286,17 +286,15 @@ object ARC {
   def run(pipeline: ETLPipeline)
   (implicit spark: SparkSession, logger: au.com.agl.arc.util.log.logger.Logger, arcContext: ARCContext) = {
 
-    val lifecyclePlugins = LifecyclePlugin.plugins()
-
     def before(stage: PipelineStage): Unit = {
-      for (p <- lifecyclePlugins) {
+      for (p <- pipeline.lifecyclePlugins) {
         logger.info().message(s"Executing before() on LifecyclePlugin: ${p.getClass.getName}")
         p.before(stage)
       }
     }
 
     def after(stage: PipelineStage, result: Option[DataFrame], isLast: Boolean): Unit = {
-      for (p <- lifecyclePlugins) {
+      for (p <- pipeline.lifecyclePlugins) {
         logger.info().message(s"Executing after(last = $isLast) on LifecyclePlugin: ${p.getClass.getName}")
         p.after(stage, result, isLast)
       }

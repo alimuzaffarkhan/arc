@@ -37,13 +37,13 @@ class PipelineStagePluginSuite extends FunSuite with BeforeAndAfter {
     val pipeline = ConfigUtils.parsePipeline(Option("classpath://conf/custom_plugin.conf"), argsMap, env)
 
     pipeline match {
-      case Right(ETLPipeline(CustomStage(name, params, stage) :: Nil)) =>
+      case Right(ETLPipeline(CustomStage(name, params, stage) :: Nil, Nil)) =>
         assert(name === "custom plugin")
         val configParms = Map[String, String](
           "foo" -> "bar"
         )
         assert(params === configParms)
-        assert(stage.getClass.getName === "au.com.agl.arc.plugins.ArcCustomPipelineStage")
+        assert(stage.getClass.getName === "au.com.agl.arc.plugins.PipelineStagePluginTest")
       case _ => fail("expected CustomStage")
     }
   }

@@ -36,6 +36,14 @@ class UDFPluginSuite extends FunSuite with BeforeAndAfter {
   test("UDFPluginSuite: Custom UDFs are registered") {
     implicit val spark = session
 
+    implicit val logger = LoggerFactory.getLogger(spark.sparkContext.applicationId)
+
+    val env = "test"
+
+    val argsMap = collection.mutable.HashMap[String, String]()
+
+    val pipeline = ConfigUtils.parsePipeline(Option("classpath://conf/udf_plugin.conf"), argsMap, env)    
+
     val df = spark.sql("""
     SELECT add_ten(1) AS one_plus_ten, add_twenty(1) AS one_plus_twenty
     """)

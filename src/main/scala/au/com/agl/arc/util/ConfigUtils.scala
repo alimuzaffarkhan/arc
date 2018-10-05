@@ -14,7 +14,7 @@ import org.apache.spark.ml.tuning.CrossValidatorModel
 import org.apache.spark.sql._
 import au.com.agl.arc.api._
 import au.com.agl.arc.api.API._
-import au.com.agl.arc.plugins.{DynamicConfigurationPlugin, PipelineStagePlugin}
+import au.com.agl.arc.plugins._
 import au.com.agl.arc.util.ControlUtils._
 import au.com.agl.arc.util.EitherUtils._
 
@@ -147,28 +147,33 @@ object ConfigUtils {
     etlConfString.rightFlatMap { str =>
       val etlConf = ConfigFactory.parseString(str, ConfigParseOptions.defaults().setSyntax(ConfigSyntax.CONF))
 
-      val pluginConfs: List[Config] = configPlugins(etlConf).map( c => ConfigFactory.parseMap(c.values()) )
+      val dynamicConfigurations: List[Config] = loadDynamicConfigurationPlugins(etlConf).map( c => ConfigFactory.parseMap(c.values()) )
 
       val config = etlConf.withFallback(base)
 
-      val c = pluginConfs match {
+      val c = dynamicConfigurations match {
         case Nil =>
           config.resolve()
         case _ =>
-          val pluginConf = pluginConfs.reduceRight[Config]{ case (c1, c2) => c1.withFallback(c2) }
+          val pluginConf = dynamicConfigurations.reduceRight[Config]{ case (c1, c2) => c1.withFallback(c2) }
           val pluginValues = pluginConf.root().unwrapped()
           logger.info().message("Found additional config values from plugins").field("pluginConf", pluginValues).log()
           config.resolveWith(pluginConf).resolve()
       }
 
-      readPipeline(c, uri, argsMap, env)
+      // create after resolution so values environment variables can be passed later
+      val lifecyclePlugins: List[LifecyclePlugin] = loadLifecyclePlugins(etlConf)
+
+      registerUDFPlugins(etlConf)
+
+      readPipeline(c, uri, argsMap, env, lifecyclePlugins)
     }
   }
 
-  def configPlugins(c: Config): List[DynamicConfigurationPlugin] = {
-    if (c.hasPath("plugins.config")) {
+  def loadDynamicConfigurationPlugins(c: Config): List[DynamicConfigurationPlugin] = {
+    if (c.hasPath("plugins.dynamicConfiguration")) {
       val plugins =
-        (for (p <- c.getStringList("plugins.config").asScala) yield {
+        (for (p <- c.getStringList("plugins.dynamicConfiguration").asScala) yield {
           DynamicConfigurationPlugin.pluginForName(p).map(_ :: Nil)
         }).toList
       plugins.flatMap( p => p.getOrElse(Nil))
@@ -176,6 +181,26 @@ object ConfigUtils {
       Nil
     }
   }
+
+  def loadLifecyclePlugins(c: Config): List[LifecyclePlugin] = {
+    if (c.hasPath("plugins.lifecycle")) {
+      val plugins =
+        (for (p <- c.getStringList("plugins.lifecycle").asScala) yield {
+          LifecyclePlugin.pluginForName(p).map(_ :: Nil)
+        }).toList
+      plugins.flatMap( p => p.getOrElse(Nil))
+    } else {
+      Nil
+    }
+  }  
+
+  def registerUDFPlugins(c: Config)(implicit spark: SparkSession, logger: au.com.agl.arc.util.log.logger.Logger) {
+    if (c.hasPath("plugins.userDefinedFunction")) {
+      for (p <- c.getStringList("plugins.userDefinedFunction").asScala) yield {
+        UDFPlugin.registerPluginsForName(p)
+      }
+    }
+  }  
 
   def readMap(path: String, c: Config): Map[String, String] = {
     if (c.hasPath(path)) {
@@ -1772,7 +1797,7 @@ object ConfigUtils {
     }
   }
 
-  def readPipeline(c: Config, uri: URI, argsMap: collection.mutable.Map[String, String], env: String)(implicit spark: SparkSession, logger: au.com.agl.arc.util.log.logger.Logger): Either[List[Error], ETLPipeline] = {
+  def readPipeline(c: Config, uri: URI, argsMap: collection.mutable.Map[String, String], env: String, lifecyclePlugins: List[LifecyclePlugin])(implicit spark: SparkSession, logger: au.com.agl.arc.util.log.logger.Logger): Either[List[Error], ETLPipeline] = {
     import ConfigReader._
 
     val startTime = System.currentTimeMillis() 
@@ -1894,7 +1919,7 @@ object ConfigUtils {
       .log()      
 
     errors match {
-      case Nil => Right(ETLPipeline(stages.reverse))
+      case Nil => Right(ETLPipeline(stages.reverse, lifecyclePlugins))
       case _ => Left(errors.reverse)
     }
   }

@@ -17,14 +17,14 @@ trait LifecyclePlugin {
 
 object LifecyclePlugin {
 
-  def plugins(): List[LifecyclePlugin] = {
+  def pluginForName(name: String): Option[LifecyclePlugin] = {
 
     val loader = Utils.getContextOrSparkClassLoader
     val serviceLoader = ServiceLoader.load(classOf[LifecyclePlugin], loader)
 
-    val plugins = serviceLoader.iterator().asScala.toList
+    val plugins = for (p <- serviceLoader.iterator().asScala.toList if p.getClass.getName == name) yield p
 
-    plugins
+    plugins.headOption
   }
 
 }

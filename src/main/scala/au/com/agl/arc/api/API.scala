@@ -3,7 +3,7 @@ package au.com.agl.arc.api
 import java.net.URI
 import java.time.LocalTime
 
-import au.com.agl.arc.plugins.PipelineStagePlugin
+import au.com.agl.arc.plugins.{LifecyclePlugin, PipelineStagePlugin}
 import org.apache.spark.ml.PipelineModel
 import org.apache.spark.ml.tuning.CrossValidatorModel
 import org.apache.spark.sql.types._
@@ -302,7 +302,7 @@ object API {
     case class GoogleCloudStorageKeyFile(projectID: String, keyFilePath: String) extends Authentication
   }
 
-  case class ETLPipeline(stages: List[PipelineStage])
+  case class ETLPipeline(stages: List[PipelineStage], lifecyclePlugins: List[LifecyclePlugin])
 
   case class TypingError(field: String, message: String)
 
