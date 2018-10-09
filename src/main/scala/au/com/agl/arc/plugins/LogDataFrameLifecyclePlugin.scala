@@ -7,7 +7,7 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 import au.com.agl.arc.api.API.PipelineStage
 import au.com.agl.arc.util.Utils
 
-class LogResultsetsLifecyclePlugin extends LifecyclePlugin {
+class LogDataFrameLifecyclePlugin extends LifecyclePlugin {
 
   override def before(stage: PipelineStage)(implicit spark: SparkSession, logger: au.com.agl.arc.util.log.logger.Logger) {}
 

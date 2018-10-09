@@ -196,7 +196,7 @@ object ConfigUtils {
 
   def registerUDFPlugins(c: Config)(implicit spark: SparkSession, logger: au.com.agl.arc.util.log.logger.Logger) {
     if (c.hasPath("plugins.userDefinedFunction")) {
-      for (p <- c.getStringList("plugins.userDefinedFunction").asScala) yield {
+      for (p <- c.getStringList("plugins.userDefinedFunction").asScala) {
         UDFPlugin.registerPluginsForName(p)
       }
     }

@@ -22,9 +22,7 @@ object UDFPlugin {
     val loader = Utils.getContextOrSparkClassLoader
     val serviceLoader = ServiceLoader.load(classOf[UDFPlugin], loader)
 
-    val plugins = for (p <- serviceLoader.iterator().asScala.toList if p.getClass.getName == name) yield p
-
-    for (p <- serviceLoader.iterator().asScala) {
+    for (p <- serviceLoader.iterator().asScala.toList if p.getClass.getName == name) {
       val pluginUDFs = p.register(spark.sqlContext)
 
       val name = p.getClass.getName
