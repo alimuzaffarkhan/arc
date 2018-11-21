@@ -250,4 +250,52 @@ class TensorFlowServingTransformSuite extends FunSuite with BeforeAndAfter {
     }
   } 
 
+  test("HTTPTransform: Can call TensorFlowServing dependent datasets" ) {
+    implicit val spark = session
+    import spark.implicits._
+    implicit val logger = LoggerFactory.getLogger(spark.sparkContext.applicationId)
+
+    val df = spark.range(1, 10).toDF
+    df.createOrReplaceTempView(inputView)
+
+    var payloadDataset = spark.sql(s"""
+    SELECT 
+      id
+    FROM ${inputView}
+    """).repartition(1)
+    payloadDataset.createOrReplaceTempView(inputView)
+
+    val transformDataset0 = transform.TensorFlowServingTransform.transform(
+      TensorFlowServingTransform(
+        name=outputView,
+        uri=new URI(uri),
+        inputView=inputView,
+        outputView=outputView,
+        signatureName=None,
+        responseType=Option(IntegerResponse),
+        batchSize=Option(10),
+        params=Map.empty,
+        persist=false,
+        inputField=Option("id")
+      )
+    ).get
+
+    val transformDataset1 = transform.TensorFlowServingTransform.transform(
+      TensorFlowServingTransform(
+        name=outputView,
+        uri=new URI(uri),
+        inputView=outputView,
+        outputView="output2",
+        signatureName=None,
+        responseType=Option(IntegerResponse),
+        batchSize=Option(10),
+        params=Map.empty,
+        persist=false,
+        inputField=Option("result")
+      )
+    ).get
+
+    transformDataset1.show
+  } 
+
 }
