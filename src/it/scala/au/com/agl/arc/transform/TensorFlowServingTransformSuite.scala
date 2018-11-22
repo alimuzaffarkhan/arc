@@ -280,6 +280,8 @@ class TensorFlowServingTransformSuite extends FunSuite with BeforeAndAfter {
       )
     ).get
 
+    print(transformDataset0.queryExecution.sparkPlan.prettyJson)
+
     val transformDataset1 = transform.TensorFlowServingTransform.transform(
       TensorFlowServingTransform(
         name=outputView,
@@ -291,7 +293,7 @@ class TensorFlowServingTransformSuite extends FunSuite with BeforeAndAfter {
         batchSize=Option(10),
         params=Map.empty,
         persist=false,
-        inputField=Option("result")
+        inputField=Option("id")
       )
     ).get
 
